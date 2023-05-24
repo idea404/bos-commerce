@@ -1,0 +1,31 @@
+{
+  "name": "near-bos-commerce",
+  "version": "0.0.0",
+  "description": "Sell any goods on the Blockchain Operating System",
+  "repository": "https://github.com/idea404/bos-commerce",
+  "author": "Dennis (idea404)",
+  "license": "(MIT AND Apache-2.0)",
+  "scripts": {
+    "build": "",
+    "test": "ava --config ./ava.config.cjs"
+  },
+  "dependencies": {
+    "near-sdk-js": "^1.0.0"
+  },
+  "devDependencies": {
+    "@ava/typescript": "^2.0.0",
+    "@types/bn.js": "^5.1.0",
+    "@types/fs-extra": "^9.0.12",
+    "@types/node": "^16.4.10",
+    "@types/rimraf": "^3.0.1",
+    "ava": "^4.0.1",
+    "ts-node": "^10.1.0",
+    "typescript": "^4.3.5",
+    "near-workspaces": "^3.3.0"
+  },
+  "engines": {
+    "node": "^14.17.0 || >=16.0.0",
+    "npm": ">= 6.0.0"
+  },
+  "private": true
+}
