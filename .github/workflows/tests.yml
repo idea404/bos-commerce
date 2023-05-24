@@ -18,7 +18,7 @@ jobs:
         with:
           version: 8.5
       - name: Install modules
-        run: pnpm ci
+        run: pnpm --frozen-lockfile
       - name: Build Contract
         run: pnpm build
       - name: Run tests
