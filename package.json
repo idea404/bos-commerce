@@ -6,7 +6,7 @@
   "author": "Dennis (idea404)",
   "license": "(MIT AND Apache-2.0)",
   "scripts": {
-    "build": "",
+    "build": "echo '#TODO build contract script'",
     "test": "ava --config ./ava.config.cjs"
   },
   "dependencies": {
