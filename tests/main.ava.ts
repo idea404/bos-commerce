@@ -28,23 +28,18 @@ test("create_item: happy path", async (t) => {
   const result = await alice.call(contract, "create_item", { name: "test", description: "test", image: "test" }, { attachedDeposit: NEAR.parse("0.01 N").toJSON() });
   t.deepEqual(result, { success: true, msg: "Item created successfully", item_id: "0" });
   const items = await contract.view("get_items", {});
-  t.deepEqual(items, [
-    { id: "0", name: "test", description: "test", image: "test", owner: alice.accountId, created_at: "0", updated_at: "0", status: "CREATED", price: "" },
-  ]);
+  t.deepEqual(items, [{ id: "0", name: "test", description: "test", image: "test", owner: alice.accountId, created_at: "0", updated_at: "0", status: "CREATED", price: "" }]);
 });
 
 test("create_item: missing fields", async (t) => {
   const { contract, alice } = t.context.accounts;
   const result = await alice.call(contract, "create_item", { name: "test" }, { attachedDeposit: NEAR.parse("0.01 N").toJSON() });
-  t.deepEqual(result, { success: true, msg: "Item created successfully", item_id: "0" });
+  t.deepEqual(result, { success: false, msg: "assertion failed: Description is required" });
   const items = await contract.view("get_items", {});
-  t.deepEqual(items, [
-    { id: "0", name: "test", description: "test", image: "test", owner: alice.accountId, created_at: "0", updated_at: "0", status: "CREATED", price: "" },
-  ]);
+  t.deepEqual(items, []);
 });
 
 // TODO
-// test create item with missing fields
 // test create item with invalid fields
 // test create item with invalid owner
 // test default storage fee
