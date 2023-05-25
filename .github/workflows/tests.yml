@@ -18,8 +18,8 @@ jobs:
         with:
           version: 8.5
       - name: Install modules
-        run: pnpm i --frozen-lockfile
+        run: cd contract && pnpm i --frozen-lockfile && cd ../tests && pnpm i --frozen-lockfile
       - name: Build Contract
-        run: pnpm build
+        run: cd contract && pnpm build
       - name: Run tests
-        run: pnpm test
+        run: cd tests && pnpm test
