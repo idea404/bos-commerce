@@ -2,6 +2,8 @@ import { NearBindgen, initialize, call, near, view, LookupMap, Vector, assert } 
 import { AccountId } from "near-sdk-js/lib/types";
 import { Item, ItemStatus } from "./models";
 
+const MINIMUM_NEAR_DEPOSIT = 0.025;
+
 @NearBindgen({})
 class BOSCommerce {
   contract_account: AccountId = "";
@@ -19,9 +21,16 @@ class BOSCommerce {
   create_item({ name, description, image }: { name: string; description: string; image: string }): object {
     try {
       assert(name, "Name is required");
+      assert(typeof name === "string", "Name must be a string");
       assert(description, "Description is required");
+      assert(typeof description === "string", "Description must be a string");
       assert(image, "Image is required");
-      
+      assert(typeof image === "string", "Image must be a string");
+      assert(
+        near.attachedDeposit() >= MINIMUM_NEAR_DEPOSIT,
+        `Not enough attached deposit. Minimum deposit is ${MINIMUM_NEAR_DEPOSIT} NEAR and you attached ${near.attachedDeposit()} NEAR.`
+      );
+
       const item_id = this.item_ids.length.toString();
       const item = new Item();
       item.id = item_id;
