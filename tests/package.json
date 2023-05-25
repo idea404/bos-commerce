@@ -1,17 +1,13 @@
 {
-  "name": "near-bos-commerce",
-  "version": "0.1.0",
+  "name": "near-bos-commerce-tests",
+  "version": "0.0.0",
   "description": "Sell any goods on the Blockchain Operating System",
   "repository": "https://github.com/idea404/bos-commerce",
   "author": "Dennis (idea404)",
   "license": "MIT AND Apache-2.0",
   "private": true,
   "scripts": {
-    "build": "near-sdk-js build src/contract.ts build/contract.wasm",
-    "test": "cd tests && pnpm i && pnpm run test"
-  },
-  "dependencies": {
-    "near-sdk-js": "^1.0.0"
+    "test": "ava"
   },
   "devDependencies": {
     "@ava/typescript": "^2.0.0",
@@ -22,6 +18,7 @@
     "ava": "^4.3.3",
     "esbuild": "^0.17.19",
     "near-workspaces": "^3.3.0",
-    "typescript": "^4.9.5"
+    "typescript": "^4.9.5",
+    "ts-node": "^10.9.1"
   }
 }

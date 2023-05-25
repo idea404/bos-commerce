@@ -1,45 +1,52 @@
-/**
- * This test demonstrates basic behavior of near-workspaces, making simple
- * function calls and view calls to the contract from
- * https://github.com/near-examples/rust-status-message
- *
- * Note that the same tests will be run on both a local sandbox environment and
- * on testnet by using the `test:sandbox` and `test:testnet` scripts in
- * package.json.
- */
-import {Worker, NEAR, NearAccount} from 'near-workspaces';
-import anyTest, {TestFn} from 'ava';
+import { Worker, NEAR, NearAccount } from "near-workspaces";
+import anyTest, { TestFn } from "ava";
+import { ItemStatus } from "../src/models";
 
 const test = anyTest as TestFn<{
   worker: Worker;
   accounts: Record<string, NearAccount>;
 }>;
 
-test.beforeEach(async t => {
+test.beforeEach(async (t) => {
   // Init the worker and start a Sandbox server
   const worker = await Worker.init();
 
-  // Prepare sandbox for tests, create accounts, deploy contracts, etx.
-  // const root = worker.rootAccount;
-  // const contract = await root.devDeploy(
-  //   '__tests__/build/debug/status_message.wasm',
-  //   {initialBalance: NEAR.parse('3 N').toJSON()},
-  // );
-  // const ali = await root.createSubAccount('ali', {initialBalance: NEAR.parse('3 N').toJSON()});
+  const root = worker.rootAccount;
+  const contract = await root.devDeploy("../build/contract.wasm", { args: {}, initialBalance: NEAR.parse("10 N").toJSON(), method: "init" });
+  const alice = await root.createSubAccount("alice", { initialBalance: NEAR.parse("10 N").toJSON() });
 
-  // Save state for test runs, it is unique for each test
   t.context.worker = worker;
-  // t.context.accounts = {root, contract, ali};
+  t.context.accounts = { root, contract, alice };
 });
 
-test.afterEach.always(async t => {
-  // Stop Sandbox server
-  await t.context.worker.tearDown().catch(error => {
-    console.log('Failed to tear down the worker:', error);
+test.afterEach.always(async (t) => {
+  await t.context.worker.tearDown().catch((error) => {
+    console.log("Failed to tear down the worker:", error);
   });
 });
 
-test('Sample test', async t => {
-  t.log("Hello");
-  t.pass();
+test("create_item: happy path", async (t) => {
+  const { contract, alice } = t.context.accounts;
+  const result = await alice.call(contract, "create_item", { name: "test", description: "test", image: "test" }, { attachedDeposit: NEAR.parse("0.01 N").toJSON() });
+  t.deepEqual(result, { success: true, msg: "Item created successfully", item_id: "0" });
+  const items = await contract.view("get_items", {});
+  t.deepEqual(items, [
+    { id: "0", name: "test", description: "test", image: "test", owner: alice.accountId, created_at: "0", updated_at: "0", status: ItemStatus.CREATED, price: "" },
+  ]);
 });
+
+test("create_item: missing fields", async (t) => {
+  const { contract, alice } = t.context.accounts;
+  const result = await alice.call(contract, "create_item", { name: "test" }, { attachedDeposit: NEAR.parse("0.01 N").toJSON() });
+  t.deepEqual(result, { success: true, msg: "Item created successfully", item_id: "0" });
+  const items = await contract.view("get_items", {});
+  t.deepEqual(items, [
+    { id: "0", name: "test", description: "test", image: "test", owner: alice.accountId, created_at: "0", updated_at: "0", status: ItemStatus.CREATED, price: "" },
+  ]);
+});
+
+// TODO
+// test create item with missing fields
+// test create item with invalid fields
+// test create item with invalid owner
+// test default storage fee
