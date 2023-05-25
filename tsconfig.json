@@ -9,6 +9,6 @@
     "forceConsistentCasingInFileNames": true,
     "experimentalDecorators": true
   },
-  "include": ["contract/src"],
+  "include": ["contract/src/*"],
   "exclude": ["node_modules"]
 }
