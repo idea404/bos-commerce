@@ -2,7 +2,7 @@ import { NearBindgen, initialize, call, near, view, LookupMap, Vector, assert } 
 import { AccountId } from "near-sdk-js/lib/types";
 import { Item, ItemStatus } from "./models";
 
-const MINIMUM_NEAR_DEPOSIT = 0.025;
+const MINIMUM_NEAR_DEPOSIT = BigInt("25" + "0".repeat(21)); // 0.025 NEAR
 
 @NearBindgen({})
 class BOSCommerce {
@@ -28,7 +28,7 @@ class BOSCommerce {
       assert(typeof image === "string", "Image must be a string");
       assert(
         near.attachedDeposit() >= MINIMUM_NEAR_DEPOSIT,
-        `Not enough attached deposit. Minimum deposit is ${MINIMUM_NEAR_DEPOSIT} NEAR and you attached ${near.attachedDeposit()} NEAR.`
+        `Not enough attached deposit. Minimum deposit is ${MINIMUM_NEAR_DEPOSIT} yoctoNEAR and you attached ${near.attachedDeposit()} yoctoNEAR.`
       );
 
       const item_id = this.item_ids.length.toString();
@@ -58,6 +58,27 @@ class BOSCommerce {
     }
   }
 
+  @call({})
+  delete_item({ item_id }: { item_id: string }): object {
+    try {
+      assert(item_id, "Item ID is required");
+      assert(typeof item_id === "string", "Item ID must be a string");
+      assert(this.items.get(item_id), "Item does not exist");
+      assert(this.items.get(item_id)?.owner === near.predecessorAccountId(), "Only the owner can delete an item");
+      
+      const item = this.items.get(item_id);
+      if (item) {
+        item.status = ItemStatus.DELETED;
+        this.items.set(item_id, item);
+      }
+
+      return { success: true, msg: "Item deleted successfully" };
+    } catch (e: any) {
+      return { success: false, msg: e.message };
+    }
+  }
+
+
   @view({})
   get_items(): Array<Item> {
     const item_ids = this.item_ids.toArray();
@@ -65,7 +86,9 @@ class BOSCommerce {
     for (const item_id of item_ids) {
       const item = this.items.get(item_id);
       if (item) {
-        items.push(item);
+        if (item.status !== ItemStatus.DELETED) {
+          items.push(item);
+        }
       }
     }
 
