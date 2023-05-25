@@ -2,6 +2,7 @@
 export enum ItemStatus {
   CREATED = "CREATED",
   FORSALE = "FORSALE",
+  DELETED = "DELETED",
   SOLD = "SOLD"
 }
 export class Item {
