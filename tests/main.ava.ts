@@ -220,3 +220,49 @@ test("delist_item: item is not listed", async (t) => {
   const result = await alice.call(contract, "delist_item", { item_id: "0" });
   t.deepEqual(result, { success: false, msg: "assertion failed: Item is not listed for sale" });
 });
+
+test("purchase_item: happy path", async (t) => {
+  const { contract, alice, bob } = t.context.accounts;
+  await alice.call(contract, "create_item", { name: "test", description: "test", image: "test" }, { attachedDeposit: "0.025 N" });
+  await alice.call(contract, "list_item", { item_id: "0", price: 0.1 });
+  const bobBalanceBefore = (await bob.balance()).total;
+  const result = await bob.call(contract, "purchase_item", { item_id: "0" }, { attachedDeposit: "0.1 N" });
+  t.deepEqual(result, { success: true, msg: "Item purchased successfully" });
+  const bobBalanceAfter = (await bob.balance()).total;
+  t.true(bobBalanceBefore.sub(bobBalanceAfter).toBigInt() > BigInt("1" + "0".repeat(23)) && bobBalanceBefore.sub(bobBalanceAfter).toBigInt() < BigInt("11" + "0".repeat(22)), "Bob's balance did not decrease by the expected amount");
+  const items = await contract.view("get_items", {});
+  t.deepEqual(items, [{ id: "0", name: "test", description: "test", image: "test", owner: bob.accountId, created_at: "0", updated_at: "0", status: "SOLD", price: "" }]);
+});
+
+test("purchase_item: missing fields", async (t) => {
+  const { contract, alice, bob } = t.context.accounts;
+  const result = await bob.call(contract, "purchase_item", {}, { attachedDeposit: "0.1 N" });
+  t.deepEqual(result, { success: false, msg: "assertion failed: Item ID is required" });
+});
+
+test("purchase_item: invalid fields", async (t) => {
+  const { contract, alice, bob } = t.context.accounts;
+  const result = await bob.call(contract, "purchase_item", { item_id: 1.01 }, { attachedDeposit: "0.1 N" });
+  t.deepEqual(result, { success: false, msg: "assertion failed: Item ID must be a string" });
+});
+
+test("purchase_item: item does not exist", async (t) => {
+  const { contract, alice, bob } = t.context.accounts;
+  const result = await bob.call(contract, "purchase_item", { item_id: "0" }, { attachedDeposit: "0.1 N" });
+  t.deepEqual(result, { success: false, msg: "assertion failed: Item does not exist" });
+});
+
+test("purchase_item: not listed", async (t) => {
+  const { contract, alice, bob } = t.context.accounts;
+  await alice.call(contract, "create_item", { name: "test", description: "test", image: "test" }, { attachedDeposit: "0.025 N" });
+  const result = await bob.call(contract, "purchase_item", { item_id: "0" }, { attachedDeposit: "0.1 N" });
+  t.deepEqual(result, { success: false, msg: "assertion failed: Item is not listed for sale" });
+});
+
+test("purchase_item: not enough deposit", async (t) => {
+  const { contract, alice, bob } = t.context.accounts;
+  await alice.call(contract, "create_item", { name: "test", description: "test", image: "test" }, { attachedDeposit: "0.025 N" });
+  await alice.call(contract, "list_item", { item_id: "0", price: 0.1 });
+  const result = await bob.call(contract, "purchase_item", { item_id: "0" }, { attachedDeposit: "0.01 N" });
+  t.deepEqual(result, { success: false, msg: "assertion failed: Not enough attached deposit. Minimum deposit is 100000000000000000000000 yoctoNEAR and you attached 10000000000000000000000 yoctoNEAR." });
+});
