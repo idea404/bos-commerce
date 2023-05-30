@@ -65,7 +65,8 @@ class BOSCommerce {
       assert(typeof item_id === "string", "Item ID must be a string");
       assert(this.items.get(item_id), "Item does not exist");
       assert(this.items.get(item_id)?.owner === near.predecessorAccountId(), "Only the owner can delete an item");
-      
+      assert(this.items.get(item_id)?.status !== ItemStatus.FORSALE, "Item is listed for sale. Please delist it first");
+
       const item = this.items.get(item_id);
       if (item) {
         item.status = ItemStatus.DELETED;
@@ -78,6 +79,52 @@ class BOSCommerce {
     }
   }
 
+  @call({})
+  list_item({ item_id, price }: { item_id: string; price: number }): object {
+    try {
+      assert(item_id, "Item ID is required");
+      assert(typeof item_id === "string", "Item ID must be a string");
+      assert(this.items.get(item_id), "Item does not exist");
+      assert(this.items.get(item_id)?.status !== ItemStatus.FORSALE, "Item is already listed");
+      assert(this.items.get(item_id)?.owner === near.predecessorAccountId(), "Only the owner can list an item");
+      assert(price, "Price is required");
+      assert(typeof price === "number", "Price must be a number");
+      assert(price > 0, "Price must be greater than 0");
+
+      const item = this.items.get(item_id);
+      if (item) {
+        item.price = price.toString();
+        item.status = ItemStatus.FORSALE;
+        this.items.set(item_id, item);
+        return { success: true, msg: "Item listed successfully" };
+      }
+      return { success: false, msg: "Item does not exist" };
+    } catch (e: any) {
+      return { success: false, msg: e.message };
+    }
+  }
+
+  @call({})
+  delist_item({ item_id }: { item_id: string }): object {
+    try {
+      assert(item_id, "Item ID is required");
+      assert(typeof item_id === "string", "Item ID must be a string");
+      assert(this.items.get(item_id), "Item does not exist");
+      assert(this.items.get(item_id)?.owner === near.predecessorAccountId(), "Only the owner can delist an item");
+      assert(this.items.get(item_id)?.status === ItemStatus.FORSALE, "Item is not listed for sale");
+
+      const item = this.items.get(item_id);
+      if (item) {
+        item.price = "";
+        item.status = ItemStatus.CREATED;
+        this.items.set(item_id, item);
+        return { success: true, msg: "Item delisted successfully" };
+      }
+      return { success: false, msg: "Item does not exist" };
+    } catch (e: any) {
+      return { success: false, msg: e.message };
+    }
+  }
 
   @view({})
   get_items(): Array<Item> {

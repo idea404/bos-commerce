@@ -117,3 +117,106 @@ test("delete_item: not owner", async (t) => {
   const result = await bob.call(contract, "delete_item", { item_id: "0" });
   t.deepEqual(result, { success: false, msg: "assertion failed: Only the owner can delete an item" });
 });
+
+test("delete_item: item is listed", async (t) => {
+  const { contract, alice } = t.context.accounts;
+  await alice.call(contract, "create_item", { name: "test", description: "test", image: "test" }, { attachedDeposit: NEAR.parse("0.025 N").toJSON() });
+  await alice.call(contract, "list_item", { item_id: "0", price: 0.1 });
+  const result = await alice.call(contract, "delete_item", { item_id: "0" });
+  t.deepEqual(result, { success: false, msg: "assertion failed: Item is listed for sale. Please delist it first" });
+});
+
+test("list_item: happy path", async (t) => {
+  const { contract, alice } = t.context.accounts;
+  await alice.call(contract, "create_item", { name: "test", description: "test", image: "test" }, { attachedDeposit: NEAR.parse("0.025 N").toJSON() });
+  const result = await contract.view("get_items", {});
+  t.deepEqual(result, [{ id: "0", name: "test", description: "test", image: "test", owner: alice.accountId, created_at: "0", updated_at: "0", status: "CREATED", price: "" }]);
+  const resultListItem = await alice.call(contract, "list_item", { item_id: "0", price: 0.1 });
+  t.deepEqual(resultListItem, { success: true, msg: "Item listed successfully" });
+  const resultListed = await contract.view("get_items", {});
+  t.deepEqual(resultListed, [{ id: "0", name: "test", description: "test", image: "test", owner: alice.accountId, created_at: "0", updated_at: "0", status: "FORSALE", price: "0.1" }]);
+});
+
+test("list_item: missing fields", async (t) => {
+  const { contract, alice } = t.context.accounts;
+  await alice.call(contract, "create_item", { name: "test", description: "test", image: "test" }, { attachedDeposit: NEAR.parse("0.025 N").toJSON() });
+  const result = await contract.view("get_items", {});
+  t.deepEqual(result, [{ id: "0", name: "test", description: "test", image: "test", owner: alice.accountId, created_at: "0", updated_at: "0", status: "CREATED", price: "" }]);
+
+  const resultListItem = await alice.call(contract, "list_item", {});
+  t.deepEqual(resultListItem, { success: false, msg: "assertion failed: Item ID is required" });
+});
+
+test("list_item: invalid fields", async (t) => {
+  const { contract, alice } = t.context.accounts;
+  await alice.call(contract, "create_item", { name: "test", description: "test", image: "test" }, { attachedDeposit: NEAR.parse("0.025 N").toJSON() });
+  const result = await contract.view("get_items", {});
+  t.deepEqual(result, [{ id: "0", name: "test", description: "test", image: "test", owner: alice.accountId, created_at: "0", updated_at: "0", status: "CREATED", price: "" }]);
+
+  const resultListItem = await alice.call(contract, "list_item", { item_id: 1.01, price: "test" });
+  t.deepEqual(resultListItem, { success: false, msg: "assertion failed: Item ID must be a string" });
+});
+
+test("list_item: item does not exist", async (t) => {
+  const { contract, alice } = t.context.accounts;
+  const resultListItem = await alice.call(contract, "list_item", { item_id: "0", price: 0.1 });
+  t.deepEqual(resultListItem, { success: false, msg: "assertion failed: Item does not exist" });
+});
+
+test("list_item: not owner", async (t) => {
+  const { contract, alice, bob } = t.context.accounts;
+  await alice.call(contract, "create_item", { name: "test", description: "test", image: "test" }, { attachedDeposit: NEAR.parse("0.025 N").toJSON() });
+  const resultListItem = await bob.call(contract, "list_item", { item_id: "0", price: 0.1 });
+  t.deepEqual(resultListItem, { success: false, msg: "assertion failed: Only the owner can list an item" });
+});
+
+test("list_item: item is already listed", async (t) => {
+  const { contract, alice } = t.context.accounts;
+  await alice.call(contract, "create_item", { name: "test", description: "test", image: "test" }, { attachedDeposit: NEAR.parse("0.025 N").toJSON() });;
+  await alice.call(contract, "list_item", { item_id: "0", price: 0.1 });
+  const resultListItem = await alice.call(contract, "list_item", { item_id: "0", price: 0.1 });
+  t.deepEqual(resultListItem, { success: false, msg: "assertion failed: Item is already listed" });
+});
+
+test("delist_item: happy path", async (t) => {
+  const { contract, alice, bob } = t.context.accounts;
+  await alice.call(contract, "create_item", { name: "test", description: "test", image: "test" }, { attachedDeposit: "0.025 N" });
+  await alice.call(contract, "list_item", { item_id: "0", price: 0.1 });
+  const result = await alice.call(contract, "delist_item", { item_id: "0" });
+  t.deepEqual(result, { success: true, msg: "Item delisted successfully" });
+  const items = await contract.view("get_items", {});
+  t.deepEqual(items, [{ id: "0", name: "test", description: "test", image: "test", owner: alice.accountId, created_at: "0", updated_at: "0", status: "CREATED", price: "" }]);
+});
+
+test("delist_item: missing fields", async (t) => {
+  const { contract, alice, bob } = t.context.accounts;
+  const result = await alice.call(contract, "delist_item", {});
+  t.deepEqual(result, { success: false, msg: "assertion failed: Item ID is required" });
+});
+
+test("delist_item: invalid fields", async (t) => {
+  const { contract, alice, bob } = t.context.accounts;
+  const result = await alice.call(contract, "delist_item", { item_id: 1.01 });
+  t.deepEqual(result, { success: false, msg: "assertion failed: Item ID must be a string" });
+});
+
+test("delist_item: item does not exist", async (t) => {
+  const { contract, alice, bob } = t.context.accounts;
+  const result = await alice.call(contract, "delist_item", { item_id: "0" });
+  t.deepEqual(result, { success: false, msg: "assertion failed: Item does not exist" });
+});
+
+test("delist_item: not owner", async (t) => {
+  const { contract, alice, bob } = t.context.accounts;
+  await alice.call(contract, "create_item", { name: "test", description: "test", image: "test" }, { attachedDeposit: "0.025 N" });
+  await alice.call(contract, "list_item", { item_id: "0", price: 0.1 });
+  const result = await bob.call(contract, "delist_item", { item_id: "0" });
+  t.deepEqual(result, { success: false, msg: "assertion failed: Only the owner can delist an item" });
+});
+
+test("delist_item: item is not listed", async (t) => {
+  const { contract, alice, bob } = t.context.accounts;
+  await alice.call(contract, "create_item", { name: "test", description: "test", image: "test" }, { attachedDeposit: "0.025 N" });
+  const result = await alice.call(contract, "delist_item", { item_id: "0" });
+  t.deepEqual(result, { success: false, msg: "assertion failed: Item is not listed for sale" });
+});
