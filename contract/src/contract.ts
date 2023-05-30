@@ -65,7 +65,7 @@ class BOSCommerce {
       assert(typeof item_id === "string", "Item ID must be a string");
       assert(this.items.get(item_id), "Item does not exist");
       assert(this.items.get(item_id)?.owner === near.predecessorAccountId(), "Only the owner can delete an item");
-      assert(this.items.get(item_id)?.status !== ItemStatus.FORSALE, "Item is listed for sale. Please unlist it first");
+      assert(this.items.get(item_id)?.status !== ItemStatus.FORSALE, "Item is listed for sale. Please delist it first");
 
       const item = this.items.get(item_id);
       if (item) {
@@ -105,12 +105,12 @@ class BOSCommerce {
   }
 
   @call({})
-  unlist_item({ item_id }: { item_id: string }): object {
+  delist_item({ item_id }: { item_id: string }): object {
     try {
       assert(item_id, "Item ID is required");
       assert(typeof item_id === "string", "Item ID must be a string");
       assert(this.items.get(item_id), "Item does not exist");
-      assert(this.items.get(item_id)?.owner === near.predecessorAccountId(), "Only the owner can unlist an item");
+      assert(this.items.get(item_id)?.owner === near.predecessorAccountId(), "Only the owner can delist an item");
       assert(this.items.get(item_id)?.status === ItemStatus.FORSALE, "Item is not listed for sale");
 
       const item = this.items.get(item_id);
@@ -118,7 +118,7 @@ class BOSCommerce {
         item.price = "";
         item.status = ItemStatus.CREATED;
         this.items.set(item_id, item);
-        return { success: true, msg: "Item unlisted successfully" };
+        return { success: true, msg: "Item delisted successfully" };
       }
       return { success: false, msg: "Item does not exist" };
     } catch (e: any) {
